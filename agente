@@ -1,0 +1,145 @@
+random(X):-.random(X).
+
+castout(0).
+pardoned(0).
+
++org: true
+  	<- lookupArtifact("hsj_group", GroupBoard);
+		adoptRole(hortelao)[artifact_id(GroupBoard)];
+		focus(GroupBoard).
+		
++comunicacao: true
+		<- lookupArtifact("FIPARequestArtifact", ReqArt);
+		lookupArtifact("FIPAInformArtifact", InfArt);
+		subscribe[artifact_id(ReqArt)];
+		subscribe[artifact_id(InfArt)];
+    	focus(ReqArt);
+    	focus(InfArt).
+    	
++calendario: true 
+		<- lookupArtifact("horta1", Calendario);
+		focus(Calendario).    			
+				
++normasObrig: true 
+		<- lookupArtifact("normasObrig", NormasObrig);
+		focus(NormasObrig).
+
++normasProib: true 
+		<- lookupArtifact("normasProib", NormasProib);
+		focus(NormasProib).
+		
++normasPerm: true 
+		<- lookupArtifact("normasPerm", NormasPerm);
+		focus(NormasPerm).
+		
++normasDir: true 
+		<- lookupArtifact("normasDir", NormasDir);
+		focus(NormasDir).
+		
++parcela: true
+		<- lookupArtifact("parcela", Parcela);
+		focus(Parcela).
+
++par: true
+		<- lookupArtifact("par", Par);
+		focus(Par).
+				
+// aqui são adicionadas as normas no formato de crenças	 	 
+	 	 
++norma(Id, "obrigatorio", Acao, Exc, Penalidade) : true 
+		<- .println("Norma criada. Obrigatório: ", Acao);
+		.term2string(SAcao, Acao);
+		+obrigatorio(SAcao).
+
+-norma(Id, "obrigatorio", Acao, Exc, Penalidade) : true 
+		<- .println("Norma removida. Obrigatório: ", Acao);
+		.term2string(SAcao, Acao);
+		.abolish(obrigatorio(SAcao)).						   						   						   
+
++norma(Id, "proibido", Acao, Exc, Penalidade) : true 
+		<- .println("Norma criada. Proibido: ", Acao);
+		.term2string(SAcao, Acao);
+		+proibido(SAcao).
+
+-norma(Id, "proibido", Acao, Exc, Penalidade) : true 
+		<- .println("Norma removida. Proibido: ", Acao);
+		.term2string(SAcao, Acao);
+		.abolish(proibido(SAcao)).						   						   						   
+
++norma(Id, "permissao", Acao, "permitido", Penalidade) : true  
+		<- .println("Norma criada. Permitido: ", Acao);
+		.term2string(SAcao, Acao);
+		+permitido(SAcao).
+
+-norma(Id, "permissao", Acao, "permitido", Penalidade) : true 
+		<- .println("Norma removida. Permitido: ", Acao);
+		.term2string(SAcao, Acao);
+		.abolish(permitido(SPermissao)).
+						   
++norma(Id, "permissao", Acao, "proibido", Penalidade) : true  
+		<- .println("Norma criada. Proibido: ", Acao);
+		.term2string(SAcao, Acao);
+		+proibido(SAcao).
+
+-norma(Id, "permissao", Acao, "proibido", Penalidade) : true 
+		<- .println("Norma removida. Permitido: ", Acao);
+		.term2string(SAcao, Acao);
+		.abolish(proibido(SAcao)).
+		
++newinformMessage(S, C)[artifact_id(InfArt)]: true
+		<- getMessage(C, M)[artifact_id(InfArt)];
+		.term2string(Msg, M);
+		.print("INFORM:"," Mensagem para mim:  ", Msg," de: ", S).		
+		
++newrequestMessage(S, C)[artifact_id(ReqArt)]: true
+		<- getMessage(C, M)[artifact_id(ReqArt)];
+		.term2string(Msg, M);
+		.print("REQUEST:"," Mensagem para mim:  ", Msg," de: ", S).						
+
++signal : true
+		 <-	.print("Recebi signal do calendario"); 
+		 !trabalhar.
+		
++!trabalhar: true 
+		<- consultaParcela("3","3","1", Consulta)[artifact_id(Parcela)];
+		//.term2string(SConsulta, Consulta);
+		.print("Valor da consulta: ", Consulta);
+		!plantar("3","3","1",Consulta);
+		!limpezaHorta.
+		
++!limpezaHorta : true
+	    <- .print("Limpei a horta").		
+		
++!plantar(X, Y, Parcela, Consulta) : Consulta == "0"
+		<- usarPar(X, Y, Parcela)[artifact_id(Par)].
+		
++!plantar(X, Y, Parcela, Consulta) : Consulta == "1".		
+		
++penalidade(PENALIDADE) : true <- .print("Eu fui penalizado por falta: ", PENALIDADE).		
+		
++assembleia(Agente) : true
+		<- ?random(Valor);
+		.my_name(N);
+		!enviarDecisao(Valor, Agente, N).
+		
++!enviarDecisao(Valor, Agente, N) : Valor > (0.5) & Agente \== N
+		<- .send(admin, tell, decisao(pardoned, Agente, N));
+		.print("Eu acho que ele deve ser perdoado").
+
++!enviarDecisao(Valor, Agente, N) : Valor < (0.5) & Agente \== N
+		<- .send(admin, tell, decisao(castOut, Agente, N));
+		.print("Eu acho que ele deve ser punido.").
+		
++!enviarDecisao(Valor, Agente, N) : Agente == N.
+
+//Na variável OBJETIVO é instanciado todos os planos que ele por acaso venha executar
+
+^!OBJETIVO[state(started)] : obrigatorio(OBJETIVO) | permitido(OBJETIVO)
+		<- .print("Eu sou obrigado ou permitido a: ", OBJETIVO).
+		
+^!OBJETIVO[state(started)] : not proibido(OBJETIVO)
+		<- .print("Nada diz que eu não possa fazer: ",OBJETIVO).
+	
+^!OBJETIVO[state(started)] : proibido(OBJETIVO)
+		<- .print("Eu não sou permitido a: ",OBJETIVO);
+		drop_desire(OBJETIVO).		
