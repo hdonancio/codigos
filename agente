@@ -142,4 +142,4 @@ pardoned(0).
 	
 ^!OBJETIVO[state(started)] : proibido(OBJETIVO)
 		<- .print("Eu não sou permitido a: ",OBJETIVO);
-		drop_desire(OBJETIVO).		
+		.drop_desire(OBJETIVO).		
